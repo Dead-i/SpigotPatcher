@@ -3,21 +3,29 @@ package org.spigotmc.patcher;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import java.io.File;
+import java.util.HashMap;
+
+import com.google.gson.Gson;
 import net.md_5.jbeat.Patcher;
 
 public class Main
 {
+    private static HashMap<String, Object> result = new HashMap<String, Object>();
 
     public static void main(String[] args) throws Exception
     {
+        patch( args );
+        if ( !result.isEmpty() )
+        {
+            System.out.println( new Gson().toJson( result ) );
+        }
+    }
+
+    public static void patch(String[] args) throws Exception
+    {
         if ( args.length != 3 )
         {
-            System.out.println( "Welcome to the Spigot patch applicator." );
-            System.out.println( "In order to use this tool you will need to specify three command line arguments as follows:" );
-            System.out.println( "\tjava -jar SpigotPatcher.jar original.jar patch.bps output.jar" );
-            System.out.println( "This will apply the specified patch to the original jar and save it to the output jar" );
-            System.out.println( "Please ensure that you save your original jar for later use." );
-            System.out.println( "If you have any queries, please direct them to http://www.spigotmc.org/" );
+            result.put( "error", 1 );
             return;
         }
 
@@ -27,28 +35,27 @@ public class Main
 
         if ( !originalFile.canRead() )
         {
-            System.err.println( "Specified original file " + originalFile + " does not exist or cannot be read!" );
+            result.put( "error", 2 );
             return;
         }
         if ( !patchFile.canRead() )
         {
-            System.err.println( "Specified patch file " + patchFile + " does not exist or cannot be read!!" );
+            result.put( "error", 3 );
             return;
         }
         if ( outputFile.exists() )
         {
-            System.err.println( "Specified output file " + outputFile + " exists, please remove it before running this program!" );
+            result.put( "error", 4 );
             return;
         }
         if ( !outputFile.createNewFile() )
         {
-            System.out.println( "Could not create specified output file " + outputFile + " please ensure that it is in a valid directory which can be written to." );
+            result.put( "error", 5 );
             return;
         }
 
-        System.out.println( "***** Starting patching process, please wait." );
-        System.out.println( "\tInput md5 Checksum: " + Files.hash( originalFile, Hashing.md5() ) );
-        System.out.println( "\tPatch md5 Checksum: " + Files.hash( patchFile, Hashing.md5() ) );
+        result.put( "inputsum", Files.hash( originalFile, Hashing.md5() ).toString() );
+        result.put( "patchsum", Files.hash( patchFile, Hashing.md5() ).toString() );
 
         try
         {
@@ -61,7 +68,7 @@ public class Main
             return;
         }
 
-        System.out.println( "***** Your file has been patched and verified! We hope you enjoy using Spigot!" );
-        System.out.println( "\tOutput md5 Checksum: " + Files.hash( outputFile, Hashing.md5() ) );
+        result.put( "outputsum", Files.hash( outputFile, Hashing.md5() ).toString() );
+        result.put( "success", 1 );
     }
 }
